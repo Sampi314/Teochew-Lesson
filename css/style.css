@@ -439,11 +439,7 @@ nav {
 }
 
 .vocab-card .flip-hint {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    font-size: 12px;
-    color: var(--text-muted);
+    display: none;
 }
 
 /* === Quiz === */
@@ -731,6 +727,165 @@ footer {
     color: var(--text-muted);
     font-size: 13px;
     border-top: 1px solid var(--border);
+}
+
+/* === Audio Status === */
+.audio-status {
+    text-align: center;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    margin-bottom: 40px;
+}
+
+.audio-status-ok {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27ae60;
+    border: 1px solid rgba(39, 174, 96, 0.2);
+}
+
+.audio-status-fallback {
+    background: rgba(243, 156, 18, 0.1);
+    color: #b8860b;
+    border: 1px solid rgba(243, 156, 18, 0.2);
+}
+
+.audio-status a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* === Speaker Buttons === */
+.speak-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--primary);
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.speak-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: scale(1.1);
+}
+
+.speak-btn:active {
+    transform: scale(0.95);
+}
+
+.speak-btn-light {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.speak-btn-light:hover {
+    background: rgba(255, 255, 255, 0.35);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.speak-btn-large {
+    width: 64px;
+    height: 64px;
+}
+
+.speak-btn-large svg {
+    width: 32px;
+    height: 32px;
+}
+
+/* Speaker in vocab cards */
+.vc-top-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+}
+
+/* Speaker in daily word */
+.word-spotlight .hanzi {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* Vietnamese phonetic guide */
+.vc-viet-phonetic {
+    font-size: 14px;
+    color: var(--primary);
+    margin-bottom: 6px;
+    padding: 4px 0;
+}
+
+.word-spotlight .viet-phonetic {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+/* Quiz listen button */
+.qq-listen-btn {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+/* Audio tooltip */
+.audio-tooltip {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-dark);
+    color: white;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    z-index: 1000;
+    animation: tooltipFade 2.5s ease forwards;
+}
+
+@keyframes tooltipFade {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* About steps */
+.about-steps {
+    list-style: decimal;
+    padding-left: 24px;
+    margin-bottom: 16px;
+}
+
+.about-steps li {
+    padding-left: 8px;
+    margin-bottom: 8px;
+    color: var(--text-light);
+}
+
+.about-steps li::before {
+    content: none;
+}
+
+.about-content code {
+    background: rgba(192, 57, 43, 0.08);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--primary-dark);
 }
 
 /* === Hidden utility === */

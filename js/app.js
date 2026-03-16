@@ -1,3 +1,93 @@
+// === Audio System ===
+// Priority: 1) Pre-generated Min Nan audio files  2) Web Speech API (Mandarin fallback)
+let audioManifest = null;
+let audioAvailable = false;
+
+async function loadAudioManifest() {
+    try {
+        const resp = await fetch('audio/manifest.json');
+        if (resp.ok) {
+            audioManifest = await resp.json();
+            audioAvailable = true;
+            document.body.classList.add('audio-minnan');
+            console.log('Min Nan audio loaded:', Object.keys(audioManifest).length, 'words');
+        }
+    } catch (e) {
+        // No pre-generated audio, will use Web Speech API fallback
+        console.log('No pre-generated audio found, using Mandarin TTS fallback');
+    }
+}
+
+function sanitizeFilename(hanzi) {
+    return Array.from(hanzi).map(c => c.codePointAt(0).toString(16).padStart(4, '0')).join('_');
+}
+
+function speakWord(hanzi, event) {
+    // Stop event propagation so card doesn't flip
+    if (event) {
+        event.stopPropagation();
+    }
+
+    // Priority 1: Pre-generated audio files
+    if (audioManifest && audioManifest[hanzi]) {
+        const audio = new Audio('audio/' + audioManifest[hanzi]);
+        audio.play().catch(err => {
+            console.warn('Audio playback failed, falling back to TTS:', err);
+            speakWithTTS(hanzi);
+        });
+        return;
+    }
+
+    // Priority 2: Web Speech API (Mandarin)
+    speakWithTTS(hanzi);
+}
+
+function speakWithTTS(text) {
+    if (!('speechSynthesis' in window)) {
+        showAudioTooltip('Trình duyệt không hỗ trợ phát âm');
+        return;
+    }
+
+    // Cancel any ongoing speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-CN';
+    utterance.rate = 0.8; // Slower for learning
+
+    // Try to find a Chinese voice
+    const voices = window.speechSynthesis.getVoices();
+    const zhVoice = voices.find(v => v.lang.startsWith('zh'));
+    if (zhVoice) {
+        utterance.voice = zhVoice;
+    }
+
+    window.speechSynthesis.speak(utterance);
+}
+
+function showAudioTooltip(msg) {
+    // Brief tooltip notification
+    const tip = document.createElement('div');
+    tip.className = 'audio-tooltip';
+    tip.textContent = msg;
+    document.body.appendChild(tip);
+    setTimeout(() => tip.remove(), 2500);
+}
+
+// Build speaker button HTML
+function speakerBtn(hanzi, extraClass) {
+    const cls = extraClass ? `speak-btn ${extraClass}` : 'speak-btn';
+    // Escape hanzi for safe HTML attribute
+    const escaped = hanzi.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `<button class="${cls}" onclick="speakWord('${escaped}', event)" title="Nghe phát âm" aria-label="Nghe phát âm">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+        </svg>
+    </button>`;
+}
+
 // === Navigation ===
 function navigate(page) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -54,8 +144,12 @@ function showDailyWord() {
     const word = allWords[index];
 
     document.getElementById('daily-word-card').innerHTML = `
-        <div class="hanzi">${word.hanzi}</div>
+        <div class="hanzi">
+            ${word.hanzi}
+            ${speakerBtn(word.hanzi, 'speak-btn-light')}
+        </div>
         <div class="peng-im">${word.pengim}</div>
+        ${word.vietPhonetic ? `<div class="viet-phonetic">Đọc gần giống: <strong>${word.vietPhonetic}</strong></div>` : ''}
         <div class="meaning">${word.meaning}</div>
         ${word.hanviet ? `<div class="han-viet">Hán-Việt: ${word.hanviet}</div>` : ''}
     `;
@@ -89,9 +183,12 @@ function showLesson(categoryId) {
     const container = document.getElementById('lesson-cards');
     container.innerHTML = cat.words.map((w, i) => `
         <div class="vocab-card" onclick="this.classList.toggle('flipped')">
-            <span class="flip-hint">nhấn để xem thêm</span>
+            <div class="vc-top-row">
+                ${speakerBtn(w.hanzi)}
+            </div>
             <div class="vc-hanzi">${w.hanzi}</div>
             <div class="vc-pengim">${w.pengim}</div>
+            ${w.vietPhonetic ? `<div class="vc-viet-phonetic">🇻🇳 Đọc: <strong>${w.vietPhonetic}</strong></div>` : ''}
             <div class="vc-meaning">${w.meaning}</div>
             ${w.hanviet ? `<div class="vc-hanviet">Hán-Việt: ${w.hanviet}</div>` : ''}
             <div class="vc-back">
@@ -189,6 +286,15 @@ function createQuestion(word, pool, type) {
                 ...wrongAnswers.map(w => ({ text: w.meaning, correct: false }))
             ]);
             break;
+        case 'listen':
+            prompt = '🔊';
+            promptSub = 'Nhấn nút nghe để nghe từ';
+            correctAnswer = word.meaning;
+            answers = shuffleArray([
+                { text: word.meaning + ' (' + word.hanzi + ')', correct: true },
+                ...wrongAnswers.map(w => ({ text: w.meaning + ' (' + w.hanzi + ')', correct: false }))
+            ]);
+            break;
     }
 
     return { prompt, promptSub, answers, word };
@@ -207,13 +313,24 @@ function showQuestion() {
         case 'teochew-to-viet': labelText = 'Phiên âm Triều Châu này nghĩa là gì?'; break;
         case 'viet-to-teochew': labelText = 'Tiếng Triều Châu của từ này là gì?'; break;
         case 'hanzi-to-viet': labelText = 'Chữ Hán này nghĩa là gì?'; break;
+        case 'listen': labelText = 'Nghe và chọn nghĩa đúng'; break;
     }
+
+    const isListenMode = quizState.type === 'listen';
 
     document.getElementById('quiz-question').innerHTML = `
         <div class="qq-label">${labelText}</div>
-        <div class="qq-prompt">${q.prompt}</div>
+        ${isListenMode
+            ? `<div class="qq-listen-btn">${speakerBtn(q.word.hanzi, 'speak-btn-large')}</div>`
+            : `<div class="qq-prompt">${q.prompt}</div>`
+        }
         ${q.promptSub ? `<div class="qq-prompt-sub">${q.promptSub}</div>` : ''}
     `;
+
+    // Auto-play in listen mode
+    if (isListenMode) {
+        setTimeout(() => speakWord(q.word.hanzi), 300);
+    }
 
     document.getElementById('quiz-answers').innerHTML = q.answers.map((a, i) => `
         <button class="quiz-answer-btn" onclick="selectAnswer(${i})">${a.text}</button>
@@ -293,8 +410,27 @@ function shuffleArray(arr) {
 }
 
 // === Initialize ===
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadAudioManifest();
     showDailyWord();
     renderCategories();
     populateQuizCategories();
+
+    // Update audio status indicator
+    const indicator = document.getElementById('audio-status');
+    if (indicator) {
+        if (audioAvailable) {
+            indicator.innerHTML = '🟢 Âm thanh Mân Nam (gần Triều Châu) đã sẵn sàng';
+            indicator.className = 'audio-status audio-status-ok';
+        } else {
+            indicator.innerHTML = '🟡 Đang dùng phát âm Quan Thoại (tham khảo). <a href="#" onclick="navigate(\'about\');return false;">Xem hướng dẫn tạo âm thanh Mân Nam</a>';
+            indicator.className = 'audio-status audio-status-fallback';
+        }
+    }
+
+    // Preload voices for Web Speech API
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
 });

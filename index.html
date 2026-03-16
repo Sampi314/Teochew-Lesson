@@ -59,6 +59,8 @@
                 </div>
             </div>
 
+            <div id="audio-status" class="audio-status"></div>
+
             <div class="daily-word">
                 <h2>Từ vựng hôm nay</h2>
                 <div id="daily-word-card" class="word-spotlight"></div>
@@ -96,6 +98,7 @@
                         <option value="teochew-to-viet">Triều Châu → Tiếng Việt</option>
                         <option value="viet-to-teochew">Tiếng Việt → Triều Châu</option>
                         <option value="hanzi-to-viet">Chữ Hán → Tiếng Việt</option>
+                        <option value="listen">Nghe → Chọn nghĩa</option>
                     </select>
                 </div>
                 <div class="quiz-options">
@@ -241,9 +244,21 @@
                 <ul>
                     <li>Chữ Hán (漢字)</li>
                     <li>Phiên âm Triều Châu (Peng'im)</li>
+                    <li>Phiên âm Việt gần đúng — đọc theo tiếng Việt để gần giống Triều Châu</li>
                     <li>Nghĩa tiếng Việt</li>
                     <li>Từ Hán-Việt liên quan (nếu có)</li>
                 </ul>
+
+                <h2 id="audio-guide">Hướng dẫn tạo âm thanh Mân Nam</h2>
+                <p>Mặc định, ứng dụng dùng giọng <strong>Quan Thoại</strong> (Mandarin) để đọc chữ Hán — chỉ mang tính tham khảo vì phát âm khác xa Triều Châu.</p>
+                <p>Bạn có thể tạo file âm thanh <strong>Mân Nam</strong> (Min Nan — cùng nhóm ngôn ngữ với Triều Châu) bằng cách chạy script Python đi kèm:</p>
+                <ol class="about-steps">
+                    <li>Cài đặt Python và package: <code>pip install edge-tts</code></li>
+                    <li>Chạy script: <code>python generate_audio.py</code></li>
+                    <li>Script sẽ tạo thư mục <code>audio/</code> chứa file MP3 cho mỗi từ</li>
+                    <li>Tải lại trang — ứng dụng tự động phát hiện và dùng file Mân Nam</li>
+                </ol>
+                <p><em>Lưu ý: Giọng Mân Nam của Microsoft (nan-CN) là gần nhất với Triều Châu hiện có. Tuy không hoàn toàn chính xác, nhưng gần hơn nhiều so với Quan Thoại.</em></p>
             </div>
         </section>
     </main>
