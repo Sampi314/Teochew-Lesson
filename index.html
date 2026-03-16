@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học Tiếng Triều Châu - Teochew Learning</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header id="header">
+        <div class="header-inner">
+            <div class="logo" onclick="navigate('home')">
+                <span class="logo-icon">潮</span>
+                <span class="logo-text">Học Tiếng Triều Châu</span>
+            </div>
+            <nav id="main-nav">
+                <button class="nav-btn active" data-page="home">Trang chủ</button>
+                <button class="nav-btn" data-page="lessons">Bài học</button>
+                <button class="nav-btn" data-page="quiz">Kiểm tra</button>
+                <button class="nav-btn" data-page="tones">Thanh điệu</button>
+                <button class="nav-btn" data-page="about">Giới thiệu</button>
+            </nav>
+            <button class="menu-toggle" id="menu-toggle" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="app">
+        <!-- Home Page -->
+        <section id="page-home" class="page active">
+            <div class="hero">
+                <h1>Chào mừng bạn đến với<br><strong>Học Tiếng Triều Châu</strong></h1>
+                <p class="hero-sub">Ứng dụng học tiếng Triều Châu (Teochew) dành cho người Việt Nam. Khám phá ngôn ngữ của cộng đồng Triều Châu qua từ vựng, cụm từ và bài tập thực hành.</p>
+                <div class="hero-actions">
+                    <button class="btn btn-primary" onclick="navigate('lessons')">Bắt đầu học</button>
+                    <button class="btn btn-outline" onclick="navigate('tones')">Tìm hiểu thanh điệu</button>
+                </div>
+            </div>
+
+            <div class="features">
+                <div class="feature-card" onclick="navigate('lessons')">
+                    <div class="feature-icon">📖</div>
+                    <h3>Từ vựng theo chủ đề</h3>
+                    <p>Học từ vựng qua các chủ đề: chào hỏi, số đếm, gia đình, thức ăn, và nhiều hơn nữa.</p>
+                </div>
+                <div class="feature-card" onclick="navigate('tones')">
+                    <div class="feature-icon">🎵</div>
+                    <h3>Hệ thống thanh điệu</h3>
+                    <p>So sánh thanh điệu Triều Châu với tiếng Việt để dễ nhớ và phát âm chính xác hơn.</p>
+                </div>
+                <div class="feature-card" onclick="navigate('quiz')">
+                    <div class="feature-icon">✍️</div>
+                    <h3>Bài kiểm tra</h3>
+                    <p>Ôn tập và kiểm tra kiến thức qua các bài trắc nghiệm tương tác.</p>
+                </div>
+            </div>
+
+            <div class="daily-word">
+                <h2>Từ vựng hôm nay</h2>
+                <div id="daily-word-card" class="word-spotlight"></div>
+            </div>
+        </section>
+
+        <!-- Lessons Page -->
+        <section id="page-lessons" class="page">
+            <div class="page-header">
+                <h1>Bài học</h1>
+                <p>Chọn chủ đề bạn muốn học</p>
+            </div>
+            <div id="category-list" class="category-grid"></div>
+            <div id="lesson-view" class="lesson-view hidden">
+                <button class="btn btn-back" onclick="showCategories()">← Quay lại</button>
+                <h2 id="lesson-title"></h2>
+                <div id="lesson-cards" class="vocab-cards"></div>
+            </div>
+        </section>
+
+        <!-- Quiz Page -->
+        <section id="page-quiz" class="page">
+            <div class="page-header">
+                <h1>Kiểm tra</h1>
+                <p>Chọn chủ đề và kiểm tra kiến thức của bạn</p>
+            </div>
+            <div id="quiz-setup" class="quiz-setup">
+                <div class="quiz-options">
+                    <label>Chọn chủ đề:</label>
+                    <select id="quiz-category"></select>
+                </div>
+                <div class="quiz-options">
+                    <label>Loại câu hỏi:</label>
+                    <select id="quiz-type">
+                        <option value="teochew-to-viet">Triều Châu → Tiếng Việt</option>
+                        <option value="viet-to-teochew">Tiếng Việt → Triều Châu</option>
+                        <option value="hanzi-to-viet">Chữ Hán → Tiếng Việt</option>
+                    </select>
+                </div>
+                <div class="quiz-options">
+                    <label>Số câu hỏi:</label>
+                    <select id="quiz-count">
+                        <option value="5">5 câu</option>
+                        <option value="10" selected>10 câu</option>
+                        <option value="20">20 câu</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="startQuiz()">Bắt đầu kiểm tra</button>
+            </div>
+            <div id="quiz-area" class="quiz-area hidden">
+                <div class="quiz-progress">
+                    <span id="quiz-progress-text"></span>
+                    <div class="progress-bar"><div id="quiz-progress-bar" class="progress-fill"></div></div>
+                </div>
+                <div id="quiz-question" class="quiz-question"></div>
+                <div id="quiz-answers" class="quiz-answers"></div>
+                <button id="quiz-next" class="btn btn-primary hidden" onclick="nextQuestion()">Câu tiếp theo →</button>
+            </div>
+            <div id="quiz-result" class="quiz-result hidden">
+                <h2>Kết quả</h2>
+                <div id="quiz-score" class="quiz-score"></div>
+                <button class="btn btn-primary" onclick="resetQuiz()">Làm lại</button>
+                <button class="btn btn-outline" onclick="navigate('lessons')">Ôn tập từ vựng</button>
+            </div>
+        </section>
+
+        <!-- Tones Page -->
+        <section id="page-tones" class="page">
+            <div class="page-header">
+                <h1>Thanh điệu Triều Châu</h1>
+                <p>Tiếng Triều Châu có 8 thanh điệu. Dưới đây là so sánh với tiếng Việt để bạn dễ hình dung.</p>
+            </div>
+            <div class="tones-content">
+                <div class="tone-intro">
+                    <p>Tiếng Triều Châu (Teochew) là một phương ngữ thuộc nhóm Mân Nam, có hệ thống thanh điệu phong phú với <strong>8 thanh</strong>. Người Việt có lợi thế lớn khi học tiếng Triều Châu vì tiếng Việt cũng là ngôn ngữ thanh điệu (6 thanh).</p>
+                </div>
+                <div class="tones-table-wrapper">
+                    <table class="tones-table">
+                        <thead>
+                            <tr>
+                                <th>Thanh</th>
+                                <th>Tên</th>
+                                <th>Mô tả</th>
+                                <th>Gần giống thanh tiếng Việt</th>
+                                <th>Ví dụ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1</strong></td>
+                                <td>Âm bình (陰平)</td>
+                                <td>Cao, ngang</td>
+                                <td>Thanh ngang (a)</td>
+                                <td>分 (bung¹) - phần</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2</strong></td>
+                                <td>Âm thượng (陰上)</td>
+                                <td>Cao, xuống</td>
+                                <td>Thanh huyền (à)</td>
+                                <td>粉 (húng²) - bột</td>
+                            </tr>
+                            <tr>
+                                <td><strong>3</strong></td>
+                                <td>Âm khứ (陰去)</td>
+                                <td>Thấp, xuống nhẹ</td>
+                                <td>Thanh nặng (ạ)</td>
+                                <td>訓 (hùng³) - dạy</td>
+                            </tr>
+                            <tr>
+                                <td><strong>4</strong></td>
+                                <td>Âm nhập (陰入)</td>
+                                <td>Cao, ngắn, dứt</td>
+                                <td>Thanh sắc ngắn (á ngắn)</td>
+                                <td>忽 (huk⁴) - đột nhiên</td>
+                            </tr>
+                            <tr>
+                                <td><strong>5</strong></td>
+                                <td>Dương bình (陽平)</td>
+                                <td>Thấp, hơi lên</td>
+                                <td>Thanh hỏi (ả)</td>
+                                <td>文 (bûng⁵) - văn</td>
+                            </tr>
+                            <tr>
+                                <td><strong>6</strong></td>
+                                <td>Dương thượng (陽上)</td>
+                                <td>Thấp, lên cao</td>
+                                <td>Thanh ngã (ã)</td>
+                                <td>武 (bú⁶) - võ</td>
+                            </tr>
+                            <tr>
+                                <td><strong>7</strong></td>
+                                <td>Dương khứ (陽去)</td>
+                                <td>Trung bình, nhẹ</td>
+                                <td>Thanh huyền nhẹ</td>
+                                <td>萬 (bàng⁷) - vạn</td>
+                            </tr>
+                            <tr>
+                                <td><strong>8</strong></td>
+                                <td>Dương nhập (陽入)</td>
+                                <td>Thấp, ngắn, dứt</td>
+                                <td>Thanh nặng ngắn (ạ ngắn)</td>
+                                <td>佛 (huk⁸) - phật</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tone-tips">
+                    <h3>Mẹo cho người Việt</h3>
+                    <ul>
+                        <li><strong>Lợi thế lớn:</strong> Tiếng Việt có 6 thanh, bạn đã quen với khái niệm thanh điệu rồi!</li>
+                        <li><strong>Thanh nhập (4, 8):</strong> Giống các từ tiếng Việt kết thúc bằng -c, -ch, -p, -t (ví dụ: "bắc", "một").</li>
+                        <li><strong>Âm Hán-Việt:</strong> Nhiều từ Triều Châu có gốc giống từ Hán-Việt, giúp bạn dễ đoán nghĩa.</li>
+                        <li><strong>Luyện tập:</strong> Nghe và lặp lại nhiều lần, so sánh với thanh tiếng Việt gần nhất.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Page -->
+        <section id="page-about" class="page">
+            <div class="page-header">
+                <h1>Giới thiệu</h1>
+            </div>
+            <div class="about-content">
+                <h2>Về tiếng Triều Châu (Teochew)</h2>
+                <p>Tiếng Triều Châu (潮州話, Tiều: Diê⁵ziu¹ uê⁷) là một phương ngữ thuộc nhóm Mân Nam của tiếng Trung Quốc, được nói chủ yếu ở vùng Triều Sán (潮汕), tỉnh Quảng Đông, Trung Quốc.</p>
+                <p>Cộng đồng người Triều Châu có mặt ở khắp nơi trên thế giới, đặc biệt ở Đông Nam Á. Tại Việt Nam, người Triều Châu (người Tiều) là một trong những nhóm người Hoa lớn nhất, tập trung nhiều ở TP. Hồ Chí Minh, đặc biệt ở khu vực Chợ Lớn.</p>
+
+                <h2>Tại sao người Việt nên học tiếng Triều Châu?</h2>
+                <ul>
+                    <li><strong>Lịch sử gắn bó:</strong> Cộng đồng Triều Châu có lịch sử lâu đời tại Việt Nam.</li>
+                    <li><strong>Giao thương:</strong> Tiếng Triều Châu hữu ích trong kinh doanh với cộng đồng người Hoa.</li>
+                    <li><strong>Văn hóa ẩm thực:</strong> Hiểu thêm về nguồn gốc các món ăn Triều Châu phổ biến tại Việt Nam.</li>
+                    <li><strong>Lợi thế ngôn ngữ:</strong> Tiếng Việt và tiếng Triều Châu đều là ngôn ngữ thanh điệu, chia sẻ nhiều từ Hán-Việt.</li>
+                </ul>
+
+                <h2>Về ứng dụng này</h2>
+                <p>Ứng dụng này được thiết kế đặc biệt cho người Việt Nam muốn học tiếng Triều Châu. Mỗi từ vựng đều có:</p>
+                <ul>
+                    <li>Chữ Hán (漢字)</li>
+                    <li>Phiên âm Triều Châu (Peng'im)</li>
+                    <li>Nghĩa tiếng Việt</li>
+                    <li>Từ Hán-Việt liên quan (nếu có)</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Học Tiếng Triều Châu &copy; 2026 | Dành cho người Việt Nam</p>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
