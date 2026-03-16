@@ -1,25 +1,55 @@
 // === Audio System ===
-// Priority: 1) Pre-generated Min Nan audio files  2) Web Speech API (Mandarin fallback)
+// Priority: 1) Local authentic Teochew audio (from teochewspot.com)
+//           2) Direct teochewspot.com streaming (if online)
+//           3) Web Speech API Mandarin (fallback)
+
 let audioManifest = null;
 let audioAvailable = false;
+let audioType = 'none'; // 'local-teochew', 'remote-teochew', 'mandarin-fallback'
+let teochewDicts = null; // { pinyinChaoyin, audioDict } from teochew_dicts.json
+
+const TEOCHEW_AUDIO_BASE = 'https://www.teochewspot.com/audio';
 
 async function loadAudioManifest() {
+    // Try loading local authentic Teochew audio first
     try {
-        const resp = await fetch('audio/manifest.json');
-        if (resp.ok) {
-            audioManifest = await resp.json();
+        const [manifestResp, dictsResp] = await Promise.all([
+            fetch('audio/manifest.json'),
+            fetch('audio/teochew_dicts.json'),
+        ]);
+
+        if (manifestResp.ok) {
+            audioManifest = await manifestResp.json();
             audioAvailable = true;
-            document.body.classList.add('audio-minnan');
-            console.log('Min Nan audio loaded:', Object.keys(audioManifest).length, 'words');
+            audioType = 'local-teochew';
+
+            if (dictsResp.ok) {
+                teochewDicts = await dictsResp.json();
+            }
+
+            console.log('Authentic Teochew audio loaded (local)');
+            return;
         }
     } catch (e) {
-        // No pre-generated audio, will use Web Speech API fallback
-        console.log('No pre-generated audio found, using Mandarin TTS fallback');
+        // No local audio files
     }
-}
 
-function sanitizeFilename(hanzi) {
-    return Array.from(hanzi).map(c => c.codePointAt(0).toString(16).padStart(4, '0')).join('_');
+    // Try loading just the dictionaries for remote streaming
+    try {
+        const dictsResp = await fetch('audio/teochew_dicts.json');
+        if (dictsResp.ok) {
+            teochewDicts = await dictsResp.json();
+            audioAvailable = true;
+            audioType = 'remote-teochew';
+            console.log('Teochew dicts loaded, will stream from teochewspot.com');
+            return;
+        }
+    } catch (e) {
+        // No dicts either
+    }
+
+    console.log('No Teochew audio available, using Mandarin TTS fallback');
+    audioType = 'mandarin-fallback';
 }
 
 function speakWord(hanzi, event) {
@@ -28,18 +58,96 @@ function speakWord(hanzi, event) {
         event.stopPropagation();
     }
 
-    // Priority 1: Pre-generated audio files
-    if (audioManifest && audioManifest[hanzi]) {
-        const audio = new Audio('audio/' + audioManifest[hanzi]);
-        audio.play().catch(err => {
-            console.warn('Audio playback failed, falling back to TTS:', err);
-            speakWithTTS(hanzi);
-        });
+    // Priority 1: Local authentic Teochew syllable audio
+    if (audioType === 'local-teochew' && audioManifest && audioManifest.words && audioManifest.words[hanzi]) {
+        playSyllableSequence(audioManifest.words[hanzi], 'audio/');
         return;
     }
 
-    // Priority 2: Web Speech API (Mandarin)
+    // Priority 2: Stream from teochewspot.com using dictionaries
+    if ((audioType === 'local-teochew' || audioType === 'remote-teochew') && teochewDicts) {
+        const syllables = getSyllablesForWord(hanzi, teochewDicts);
+        if (syllables.length > 0) {
+            const baseUrl = audioType === 'local-teochew' ? 'audio/' : TEOCHEW_AUDIO_BASE + '/';
+            playSyllableSequence(syllables, baseUrl);
+            return;
+        }
+    }
+
+    // Priority 3: Web Speech API (Mandarin reference)
     speakWithTTS(hanzi);
+}
+
+function getSyllablesForWord(word, dicts) {
+    const syllables = [];
+    for (const char of word) {
+        if (char >= '\u4e00' && char <= '\u9fff' || char >= '\u3400' && char <= '\u4dbf') {
+            const entry = dicts.pinyinChaoyin[char];
+            if (entry) {
+                // Extract first pronunciation
+                let chaoyin = null;
+                if (typeof entry === 'string') {
+                    chaoyin = entry;
+                } else if (Array.isArray(entry) && entry.length > 0) {
+                    chaoyin = entry[0];
+                } else if (typeof entry === 'object') {
+                    for (const key in entry) {
+                        const val = entry[key];
+                        if (Array.isArray(val) && val.length > 0) {
+                            chaoyin = val[0];
+                        } else if (typeof val === 'string') {
+                            chaoyin = val;
+                        }
+                        if (chaoyin) break;
+                    }
+                }
+
+                if (chaoyin && dicts.audioDict[chaoyin]) {
+                    syllables.push(dicts.audioDict[chaoyin]);
+                }
+            }
+        }
+    }
+    return syllables;
+}
+
+let currentPlayback = null;
+
+function playSyllableSequence(syllableIds, baseUrl) {
+    // Cancel any ongoing playback
+    if (currentPlayback) {
+        currentPlayback.cancelled = true;
+        currentPlayback = null;
+    }
+
+    const ctx = { cancelled: false, index: 0 };
+    currentPlayback = ctx;
+
+    function playNext() {
+        if (ctx.cancelled || ctx.index >= syllableIds.length) {
+            if (currentPlayback === ctx) currentPlayback = null;
+            return;
+        }
+
+        const syllable = syllableIds[ctx.index];
+        const audio = new Audio(baseUrl + syllable + '.mp3');
+        audio.onended = () => {
+            ctx.index++;
+            // Small gap between syllables
+            setTimeout(playNext, 80);
+        };
+        audio.onerror = () => {
+            console.warn('Failed to play syllable:', syllable);
+            ctx.index++;
+            playNext();
+        };
+        audio.play().catch(() => {
+            ctx.index++;
+            playNext();
+        });
+    }
+
+    playNext();
 }
 
 function speakWithTTS(text) {
@@ -419,12 +527,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Update audio status indicator
     const indicator = document.getElementById('audio-status');
     if (indicator) {
-        if (audioAvailable) {
-            indicator.innerHTML = '🟢 Âm thanh Mân Nam (gần Triều Châu) đã sẵn sàng';
-            indicator.className = 'audio-status audio-status-ok';
-        } else {
-            indicator.innerHTML = '🟡 Đang dùng phát âm Quan Thoại (tham khảo). <a href="#" onclick="navigate(\'about\');return false;">Xem hướng dẫn tạo âm thanh Mân Nam</a>';
-            indicator.className = 'audio-status audio-status-fallback';
+        switch (audioType) {
+            case 'local-teochew':
+                indicator.innerHTML = '🟢 Âm thanh Triều Châu chính gốc đã sẵn sàng (nguồn: teochewspot.com)';
+                indicator.className = 'audio-status audio-status-ok';
+                break;
+            case 'remote-teochew':
+                indicator.innerHTML = '🟢 Phát âm Triều Châu trực tuyến (nguồn: teochewspot.com)';
+                indicator.className = 'audio-status audio-status-ok';
+                break;
+            default:
+                indicator.innerHTML = '🟡 Đang dùng phát âm Quan Thoại (tham khảo). <a href="#" onclick="navigate(\'about\');return false;">Xem hướng dẫn tải âm thanh Triều Châu chính gốc</a>';
+                indicator.className = 'audio-status audio-status-fallback';
         }
     }
 
